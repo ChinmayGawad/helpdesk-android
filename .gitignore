@@ -1,0 +1,41 @@
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+
+# Files for the ART/Dalvik VM
+*.class
+
+# Java / JVM
+*.log
+
+# Location of the SDK. This is only used by Gradle and should not be checked into VCS.
+local.properties
+
+# Gradle cache and temporary files
+.gradle/
+build/
+app/build/
+*/build/
+
+# Android Studio & IntelliJ IDEA files
+.idea/
+*.iml
+*.ipr
+*.iws
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Keystore files
+*.jks
+*.keystore
+*.key
+signing.properties
+
+# OS files
+.DS_Store
+Thumbs.db
