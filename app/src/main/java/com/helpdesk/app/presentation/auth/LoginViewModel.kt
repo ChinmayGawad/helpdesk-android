@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 
 data class LoginUiState(
     val email: String = "admin@example.com",
-    val password: String = "vkUSXGMOIU_27b1q",
+    val password: String = "admin12345",
     val baseUrl: String = "https://help-desk-production-4340.up.railway.app/",
     val isLoading: Boolean = false,
     val isCheckingSession: Boolean = true,

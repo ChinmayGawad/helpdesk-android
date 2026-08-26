@@ -47,7 +47,7 @@ suspend fun <T, R> safeApiCall(
             }
 
             when (code) {
-                401 -> if (errorMessage != "Request failed with status 401") Resource.Error(AppError.Validation(errorMessage)) else Resource.Error(AppError.Unauthorized)
+                401 -> Resource.Error(AppError.Unauthorized)
                 400, 409, 422 -> Resource.Error(AppError.Validation(errorMessage))
                 else -> Resource.Error(AppError.Server(code, errorMessage))
             }

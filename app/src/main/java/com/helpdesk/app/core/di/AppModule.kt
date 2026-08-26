@@ -1,6 +1,7 @@
 package com.helpdesk.app.core.di
 
 import com.helpdesk.app.core.datastore.SessionManager
+import com.helpdesk.app.core.network.AuthInterceptor
 import com.helpdesk.app.core.network.DynamicHostInterceptor
 import com.helpdesk.app.core.network.NetworkClient
 import com.helpdesk.app.core.network.SessionCookieJar
@@ -41,9 +42,10 @@ import org.koin.dsl.module
 
 val coreModule = module {
     single { SessionManager(androidContext()) }
-    single { SessionCookieJar(get()) }
+    single { SessionCookieJar(androidContext(), get()) }
     single { DynamicHostInterceptor(get()) }
-    single { NetworkClient.createOkHttpClient(get(), get()) }
+    single { AuthInterceptor(get(), get()) }
+    single { NetworkClient.createOkHttpClient(get(), get(), get()) }
     single { NetworkClient.createApiService(get(), get()) }
 }
 

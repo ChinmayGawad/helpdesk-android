@@ -33,11 +33,31 @@ class DynamicHostInterceptor(private val sessionManager: SessionManager) : Inter
     }
 }
 
+class AuthInterceptor(
+    private val sessionManager: SessionManager,
+    private val sessionCookieJar: SessionCookieJar
+) : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val response = chain.proceed(request)
+
+        if (response.code == 401 && !request.url.encodedPath.contains("sign-in")) {
+            sessionCookieJar.clear()
+            runBlocking {
+                sessionManager.clearSession()
+            }
+        }
+
+        return response
+    }
+}
+
 object NetworkClient {
 
     fun createOkHttpClient(
         sessionCookieJar: SessionCookieJar,
-        hostInterceptor: DynamicHostInterceptor
+        hostInterceptor: DynamicHostInterceptor,
+        authInterceptor: AuthInterceptor
     ): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
@@ -46,6 +66,7 @@ object NetworkClient {
         return OkHttpClient.Builder()
             .cookieJar(sessionCookieJar)
             .addInterceptor(hostInterceptor)
+            .addInterceptor(authInterceptor)
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
