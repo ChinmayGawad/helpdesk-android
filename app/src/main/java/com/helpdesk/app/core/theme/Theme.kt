@@ -49,8 +49,8 @@ private val DarkColorScheme = darkColorScheme(
     onSurfaceVariant = TextSecondaryDark,
     outline = BorderDark,
     error = ErrorRed,
-    errorContainer = ErrorContainer,
-    onErrorContainer = OnErrorContainer
+    errorContainer = ErrorContainerDark,
+    onErrorContainer = OnErrorContainerDark
 )
 
 @Composable

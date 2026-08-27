@@ -47,7 +47,23 @@ suspend fun <T, R> safeApiCall(
             }
 
             when (code) {
-                401 -> Resource.Error(AppError.Unauthorized)
+                401 -> {
+                    if (errorMessage.isNotBlank() && !errorMessage.startsWith("Request failed") && !errorMessage.equals("Unauthorized", ignoreCase = true)) {
+                        Resource.Error(AppError.Validation(errorMessage))
+                    } else {
+                        Resource.Error(AppError.Unauthorized)
+                    }
+                }
+                429 -> Resource.Error(
+                    AppError.Server(
+                        429,
+                        if (errorMessage.contains("too many", ignoreCase = true) || errorMessage.startsWith("Request failed")) {
+                            "Rate limit reached (Too many requests). Please wait ~60 seconds and try again."
+                        } else {
+                            errorMessage
+                        }
+                    )
+                )
                 400, 409, 422 -> Resource.Error(AppError.Validation(errorMessage))
                 else -> Resource.Error(AppError.Server(code, errorMessage))
             }

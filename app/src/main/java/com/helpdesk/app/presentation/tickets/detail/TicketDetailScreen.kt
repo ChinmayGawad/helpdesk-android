@@ -3,6 +3,7 @@ package com.helpdesk.app.presentation.tickets.detail
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,10 +20,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Refresh
@@ -50,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.helpdesk.app.core.theme.Primary
 import com.helpdesk.app.core.util.DateTimeUtils
 import com.helpdesk.app.domain.model.TicketCategory
 import com.helpdesk.app.domain.model.TicketSource
@@ -73,19 +77,32 @@ fun TicketDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val ticket = uiState.ticket
+    val isDark = isSystemInDarkTheme()
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = "Ticket #${ticketId.take(8)}",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Ticket #${ticketId.take(8)}",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        )
+                        if (ticket != null) {
+                            Text(
+                                text = ticket.category.label,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -93,7 +110,11 @@ fun TicketDetailScreen(
                         viewModel.loadTicketData()
                         viewModel.loadReplies()
                     }) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "Refresh")
+                        Icon(
+                            Icons.Outlined.Refresh,
+                            contentDescription = "Refresh",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -137,15 +158,20 @@ fun TicketDetailScreen(
             ) {
                 // Ticket Subject & Status Header
                 item {
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
-                        color = MaterialTheme.colorScheme.surface
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.65f),
+                                RoundedCornerShape(16.dp)
+                            ),
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = if (isDark) 2.dp else 0.dp
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Column(modifier = Modifier.padding(18.dp)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -153,30 +179,50 @@ fun TicketDetailScreen(
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Box(modifier = Modifier.clickable { viewModel.toggleStatusSheet(true) }) {
-                                        StatusBadge(status = ticket.status)
+                                    // Status Badge with Dropdown Affordance
+                                    Surface(
+                                        shape = RoundedCornerShape(50),
+                                        color = Color.Transparent,
+                                        modifier = Modifier.clickable { viewModel.toggleStatusSheet(true) }
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            StatusBadge(status = ticket.status)
+                                            Icon(
+                                                imageVector = Icons.Outlined.ArrowDropDown,
+                                                contentDescription = "Change status",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
                                     }
+
                                     CategoryBadge(category = ticket.category)
                                 }
 
                                 Text(
                                     text = DateTimeUtils.formatRelativeTime(ticket.createdAt),
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
                             Text(
                                 text = ticket.subject,
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    lineHeight = 24.sp
+                                ),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
@@ -185,10 +231,10 @@ fun TicketDetailScreen(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(14.dp)
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
                                     text = "Submitted via ${ticket.source.label}",
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.5.sp),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -206,28 +252,37 @@ fun TicketDetailScreen(
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
-                            color = MaterialTheme.colorScheme.surface
+                                .clip(RoundedCornerShape(14.dp))
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.65f),
+                                    RoundedCornerShape(14.dp)
+                                ),
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = if (isDark) 2.dp else 0.dp
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
+                            Column(modifier = Modifier.padding(14.dp)) {
                                 Text(
                                     text = "REQUESTER",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
                                     ),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = ticket.requester.name ?: "Anonymous",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    text = ticket.requester.name ?: "Customer",
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.5.sp
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
                                     text = ticket.requester.email,
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -237,14 +292,19 @@ fun TicketDetailScreen(
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(14.dp))
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.65f),
+                                    RoundedCornerShape(14.dp)
+                                )
                                 .clickable(enabled = currentUser?.role == UserRole.ADMIN) {
                                     viewModel.toggleAssigneeSheet(true)
                                 },
-                            color = MaterialTheme.colorScheme.surface
+                            color = MaterialTheme.colorScheme.surface,
+                            tonalElevation = if (isDark) 2.dp else 0.dp
                         ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
+                            Column(modifier = Modifier.padding(14.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -254,7 +314,8 @@ fun TicketDetailScreen(
                                         text = "ASSIGNEE",
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp
                                         ),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -262,21 +323,24 @@ fun TicketDetailScreen(
                                         Icon(
                                             imageVector = Icons.Outlined.Edit,
                                             contentDescription = "Edit Assignee",
-                                            modifier = Modifier.size(12.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            modifier = Modifier.size(13.dp),
+                                            tint = Primary
                                         )
                                     }
                                 }
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(
                                     text = ticket.assignee?.name ?: "Unassigned",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.5.sp
+                                    ),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = ticket.assignee?.email ?: "Tap to assign",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = ticket.assignee?.email ?: if (currentUser?.role == UserRole.ADMIN) "Tap to assign" else "No agent assigned",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                                    color = if (ticket.assignee == null && currentUser?.role == UserRole.ADMIN) Primary else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -297,14 +361,22 @@ fun TicketDetailScreen(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
-                        color = MaterialTheme.colorScheme.surface
+                            .clip(RoundedCornerShape(14.dp))
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.65f),
+                                RoundedCornerShape(14.dp)
+                            ),
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = if (isDark) 2.dp else 0.dp
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = "Original Description",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                ),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -312,6 +384,7 @@ fun TicketDetailScreen(
                                 text = ticket.description.ifBlank { "No description provided." },
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     lineHeight = 22.sp,
+                                    fontSize = 13.5.sp,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             )
@@ -321,31 +394,74 @@ fun TicketDetailScreen(
 
                 // Conversation / Replies Header
                 item {
-                    Text(
-                        text = "Conversation Thread (${uiState.replies.size})",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Forum,
+                            contentDescription = null,
+                            tint = Primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Conversation Thread",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "${uiState.replies.size}",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
 
                 // Replies List
                 if (uiState.isLoadingReplies && uiState.replies.isEmpty()) {
                     item {
-                        CircularProgressIndicator(
+                        Row(
                             modifier = Modifier
-                                .size(24.dp)
-                                .padding(vertical = 12.dp)
-                        )
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(
+                                strokeWidth = 2.5.dp,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                 } else if (uiState.replies.isEmpty()) {
                     item {
-                        Text(
-                            text = "No replies yet. Type a response below to contact the requester.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                                .padding(16.dp),
+                            color = Color.Transparent
+                        ) {
+                            Text(
+                                text = "💬 No replies yet. Type a response below to start the conversation with the customer.",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 } else {
                     items(uiState.replies, key = { it.id }) { reply ->
@@ -407,7 +523,7 @@ fun StatusChangeBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 22.dp)
                 .padding(bottom = 32.dp)
         ) {
             Text(
@@ -417,21 +533,23 @@ fun StatusChangeBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             TicketStatus.entries.forEach { status ->
+                val isSelected = status == currentStatus
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isSelected) Primary.copy(alpha = 0.1f) else Color.Transparent)
                         .clickable { onSelectStatus(status) }
-                        .padding(vertical = 10.dp, horizontal = 8.dp),
+                        .padding(vertical = 12.dp, horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     StatusBadge(status = status)
-                    if (status == currentStatus) {
+                    if (isSelected) {
                         Icon(
                             imageVector = Icons.Outlined.Check,
                             contentDescription = "Selected",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = Primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -459,7 +577,7 @@ fun AssigneeSelectionBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 22.dp)
                 .padding(bottom = 32.dp)
         ) {
             Text(
@@ -469,44 +587,52 @@ fun AssigneeSelectionBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Unassigned option
+            val isUnassigned = currentAssigneeId == null
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (isUnassigned) Primary.copy(alpha = 0.1f) else Color.Transparent)
                     .clickable { onSelectAssignee(null) }
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                    .padding(vertical = 12.dp, horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = "Unassigned",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = if (isUnassigned) FontWeight.Bold else FontWeight.Normal
+                    ),
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                if (currentAssigneeId == null) {
+                if (isUnassigned) {
                     Icon(
                         imageVector = Icons.Outlined.Check,
                         contentDescription = "Selected",
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = Primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
             agents.filter { it.role == UserRole.AGENT }.forEach { agent ->
+                val isSelected = agent.id == currentAssigneeId
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isSelected) Primary.copy(alpha = 0.1f) else Color.Transparent)
                         .clickable { onSelectAssignee(agent.id) }
-                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                        .padding(vertical = 12.dp, horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
                         Text(
                             text = agent.name,
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            ),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
@@ -515,11 +641,11 @@ fun AssigneeSelectionBottomSheet(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    if (agent.id == currentAssigneeId) {
+                    if (isSelected) {
                         Icon(
                             imageVector = Icons.Outlined.Check,
                             contentDescription = "Selected",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = Primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -528,3 +654,4 @@ fun AssigneeSelectionBottomSheet(
         }
     }
 }
+

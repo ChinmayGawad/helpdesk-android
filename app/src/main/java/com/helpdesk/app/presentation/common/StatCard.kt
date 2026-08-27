@@ -2,6 +2,8 @@ package com.helpdesk.app.presentation.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,15 +36,27 @@ fun StatCard(
     icon: ImageVector,
     iconTint: Color,
     iconBg: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
+    val isDark = isSystemInDarkTheme()
+    val shape = RoundedCornerShape(16.dp)
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
+            .clip(shape)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.35f else 0.65f),
+                shape
+            )
+            .then(
+                if (onClick != null) Modifier.clickable(onClick = onClick)
+                else Modifier
+            ),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 0.dp
+        tonalElevation = if (isDark) 2.dp else 0.dp
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -55,13 +69,16 @@ fun StatCard(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.5.sp
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(10.dp))
                         .background(iconBg),
                     contentAlignment = Alignment.Center
                 ) {
@@ -69,18 +86,19 @@ fun StatCard(
                         imageVector = icon,
                         contentDescription = null,
                         tint = iconTint,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Text(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp
+                    fontSize = 25.sp,
+                    letterSpacing = (-0.5).sp
                 ),
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -89,10 +107,14 @@ fun StatCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 12.sp,
+                        lineHeight = 16.sp
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
     }
 }
+
