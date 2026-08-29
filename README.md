@@ -13,7 +13,7 @@ A modern, native Android client for the AI-Powered Helpdesk Ticket Management Sy
   - [Prerequisites](#prerequisites)
   - [Step 1: Start Backend Server](#step-1-start-the-local-backend-server)
   - [Step 2: Run Android App](#step-2-run-the-android-application)
-- [🔑 Demo Credentials](#-demo-credentials)
+- [🔑 Default Accounts & Access](#-default-accounts--access)
 - [🧪 Build & Test Commands](#-build--test-commands)
 - [🛡️ Security & Hardening](#-security--hardening)
 
@@ -25,12 +25,16 @@ The application strictly follows Android Clean Architecture principles, ensuring
 
 ```
 android/
+├── gradlew                           # POSIX Gradle wrapper (macOS/Linux)
+├── gradlew.bat                       # Windows batch Gradle wrapper
 ├── app/
 │   └── src/
 │       ├── main/
-│       │   ├── AndroidManifest.xml           # App manifest, permissions & network security config
+│       │   ├── AndroidManifest.xml           # App manifest & permissions
 │       │   ├── res/
-│       │   │   ├── xml/network_security_config.xml # Cleartext traffic policy (restricted to local dev)
+│       │   │   ├── xml/network_security_config.xml # Strict TLS & local dev domain configuration
+│       │   │   ├── xml/backup_rules.xml      # Excludes session secrets from cloud backup
+│       │   │   ├── xml/data_extraction_rules.xml # Excludes auth data from device transfer
 │       │   │   └── ...                       # Drawables, mipmaps, strings, and theme values
 │       │   └── java/com/helpdesk/app/
 │       │       ├── HelpdeskApplication.kt    # Application entry point & Koin DI initialization
@@ -39,9 +43,8 @@ android/
 │       │       ├── core/                     # Cross-cutting concerns & foundational infrastructure
 │       │       │   ├── di/AppModule.kt       # Koin dependency injection module declarations
 │       │       │   ├── network/              # Retrofit API, OkHttp client, CookieJar & Interceptors
-│       │       │   │   ├── ApiService.kt
-│       │       │   │   ├── AuthInterceptor.kt
-│       │       │   │   ├── DynamicHostInterceptor.kt
+│       │       │   │   ├── HelpdeskApiService.kt
+│       │       │   │   ├── NetworkClient.kt
 │       │       │   │   └── SessionCookieJar.kt
 │       │       │   ├── datastore/SessionManager.kt # Preferences DataStore for auth & host configuration
 │       │       │   ├── result/               # Resource<T> & AppError handling hierarchy
@@ -65,9 +68,9 @@ android/
 │       │       │       └── UserRepositoryImpl.kt
 │       │       │
 │       │       └── presentation/             # Presentation Layer (Jetpack Compose UI & State Management)
-│       │           ├── common/               # Reusable UI components (StatusBadge, CategoryBadge, StatCard, EmptyState, Shimmer)
+│       │           ├── common/               # Reusable UI components (StatusBadge, CategoryBadge, StatCard, EmptyState)
 │       │           ├── navigation/           # AppNavigation graph, NavigationRoutes, and BottomNavigationBar
-│       │           ├── auth/                 # LoginScreen & LoginViewModel (with Host selection modal)
+│       │           ├── auth/                 # LoginScreen & LoginViewModel (with Server Host selection modal)
 │       │           ├── dashboard/            # DashboardScreen & DashboardViewModel (KPI metrics & 30-Day volume chart)
 │       │           ├── tickets/
 │       │           │   ├── list/             # TicketListScreen & TicketListViewModel (Search, Filters, Pull-to-refresh)
@@ -107,9 +110,9 @@ android/
 ## ✨ Key Features
 
 ### 🔐 Multi-Transport Session Authentication
-- Sign in with email and password.
+- Sign in with work email and password.
 - Multi-transport session resilience: credentials persisted via **Better-Auth** session cookies (`SessionCookieJar`) and token persistence (`SessionManager` DataStore).
-- Dynamic Server Host switcher allowing on-the-fly switching between **Localhost** (`http://localhost:3000`), **Android Emulator** (`http://10.0.2.2:3000`), or custom backend URLs without rebuilding.
+- Dynamic Server Host configuration allowing on-the-fly switching between **Android Emulator** (`http://10.0.2.2:3000/`), **USB ADB Reverse** (`http://127.0.0.1:3000/`), or **Cloud Production** without recompiling.
 
 ### 📊 Analytics & Insights Dashboard
 - Real-time KPI summary cards: **Total Tickets**, **Open Tickets**, **AI-Resolved %**, and **Average Resolution Time**.
@@ -141,53 +144,60 @@ android/
 
 ### Prerequisites
 - **JDK 17** installed and configured (`JAVA_HOME`).
-- **Android Studio** (Hedgehog, Iguana, Koala, Ladybug or newer).
+- **Android Studio** (Koala, Ladybug, Iguana or newer).
 - **Android SDK 34** (installed via Android Studio SDK Manager).
 - Physical Android device (with Developer Options & USB Debugging enabled) or Android Virtual Device (AVD).
 
-### Step 1: Start the Local Backend Server
+### Step 1: Start the Backend Server
 Ensure the backend server is running on port `3000`:
-```powershell
+```bash
 cd server
 bun dev
 ```
 
 ### Step 2: Run the Android Application
 
-#### Option A: Running on a Physical Android Device (over USB)
-1. Connect your Android device via USB cable.
-2. Verify ADB connection:
-   ```powershell
+#### Option A: Running on Android Studio Emulator (Default)
+1. Start your Android Emulator in Android Studio.
+2. Build, install, and launch the application:
+   ```bash
+   # macOS / Linux
+   ./gradlew installDebug
+
+   # Windows
+   .\gradlew.bat installDebug
+   ```
+3. The app defaults to `http://10.0.2.2:3000/` which connects directly to your local development backend.
+
+#### Option B: Running on a Physical Android Device (over USB)
+1. Connect your Android device via USB cable and verify connection:
+   ```bash
    adb devices
    ```
-3. Forward port `3000` to the device:
-   ```powershell
+2. Forward port `3000` to your device:
+   ```bash
    adb reverse tcp:3000 tcp:3000
    ```
-4. Build, install, and launch the application:
-   ```powershell
-   cd android
-   .\gradlew.bat installDebug
-   adb shell am start -n com.helpdesk.app/.MainActivity
-   ```
-
-#### Option B: Running on the Android Studio Emulator
-1. Start your Android Emulator in Android Studio.
-2. In Android Studio, select your running emulator and click **Run ▶** (or run `.\gradlew.bat installDebug`).
-3. On the login screen, tap the **Server** pill in the top corner and select **Emulator (`http://10.0.2.2:3000`)**.
+3. On the login screen, tap the **Server** pill at the bottom, select **USB Local (`http://127.0.0.1:3000/`)**, and tap **Save Configuration**.
 
 ---
 
-## 🔑 Demo Credentials
+## 🔑 Default Accounts & Access
 
-The backend includes seeded demo accounts for immediate testing:
+### 🌐 Production Cloud Deployment (`https://help-desk-production-4340.up.railway.app/`)
+*(Default backend configured in the application)*
 
-| Role | Email | Password | Quick Login Action |
+| Role | Work Email | Password | Permissions |
 | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@helpdesk.local` | `admin12345` | Tap **Admin** quick-fill button on login screen |
-| **Admin (Alt)** | `admin@example.com` | `admin12345` | Enter credentials manually |
-| **Agent** | `sarah.agent@helpdesk.local` | `agent12345` | Tap **Agent** quick-fill button on login screen |
-| **Agent (Alt)** | `agent@example.com` | `agent12345` | Enter credentials manually |
+| **Admin** | `admin@example.com` | `vkUSXGMOIU_27b1q` | Full administrative control (Ticket management, Assignees, Team CRUD, Analytics) |
+
+### 💻 Local Development Server (`http://10.0.2.2:3000/` or `127.0.0.1:3000/`)
+*(When running backend locally with `bun dev`)*
+
+| Role | Default Email | Password | Permissions |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin@helpdesk.local` | `admin12345` | Full admin privileges |
+| **Agent** | `sarah.agent@helpdesk.local` | `agent12345` | Ticket triage, reply composition, AI summaries & polish |
 
 ---
 
@@ -196,26 +206,40 @@ The backend includes seeded demo accounts for immediate testing:
 Run the following Gradle commands from the `android` directory:
 
 ### Run Unit Tests
-```powershell
+```bash
+# macOS / Linux
+./gradlew testDebugUnitTest
+
+# Windows
 .\gradlew.bat testDebugUnitTest
 ```
 
 ### Assemble Debug APK
-```powershell
+```bash
+# macOS / Linux
+./gradlew assembleDebug
+
+# Windows
 .\gradlew.bat assembleDebug
 ```
-Output location:
-`android/app/build/outputs/apk/debug/app-debug.apk`
+Output: `android/app/build/outputs/apk/debug/app-debug.apk`
 
-### Assemble Release APK
-```powershell
+### Assemble Release APK (Minified & Obfuscated via R8)
+```bash
+# macOS / Linux
+./gradlew assembleRelease
+
+# Windows
 .\gradlew.bat assembleRelease
 ```
-Output location:
-`android/app/build/outputs/apk/release/app-release-unsigned.apk`
+Output: `android/app/build/outputs/apk/release/app-release-unsigned.apk`
 
 ### Clean Build Cache
-```powershell
+```bash
+# macOS / Linux
+./gradlew clean
+
+# Windows
 .\gradlew.bat clean
 ```
 
@@ -223,7 +247,8 @@ Output location:
 
 ## 🛡️ Security & Hardening
 
-- **Network Security Configuration**: `network_security_config.xml` strictly allows cleartext HTTP communication only for private local development IP ranges (`10.0.2.2`, `localhost`, `127.0.0.1`, RFC 1918 LANs), enforcing TLS/HTTPS for all production endpoints.
-- **ProGuard / R8 Optimization**: ProGuard rules configured in `app/proguard-rules.pro` to safeguard serialized DTOs, Koin dependency injection reflections, and Retrofit service interfaces.
-- **Thread Safety**: All timestamp parsing and date formatting utilizes thread-safe Java 8+ `java.time` APIs.
-- **Client-Side RBAC**: Role-based access control prevents unauthorized execution of administrative actions prior to network dispatch.
+- **Strict Network Security Configuration**: `network_security_config.xml` enforces TLS/HTTPS globally, permitting unencrypted cleartext HTTP strictly for local developer hosts (`10.0.2.2`, `localhost`, `127.0.0.1`).
+- **Gated Diagnostic Logging**: `HttpLoggingInterceptor` is active only in `BuildConfig.DEBUG` builds, preventing session tokens and user credentials from leaking into production Logcat logs.
+- **R8 / ProGuard Minification**: Release builds enable code shrinking, obfuscation, and unused resource removal via `isMinifyEnabled = true` and `isShrinkResources = true`.
+- **Session Backup Protection**: `backup_rules.xml` and `data_extraction_rules.xml` explicitly exclude cookie stores and DataStore session tokens from automated cloud backups and device transfers.
+- **Thread Safety**: Date-time parsing and formatting uses thread-safe Java 8+ `java.time` APIs.

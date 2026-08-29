@@ -22,29 +22,20 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AdminPanelSettings
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SmartToy
-import androidx.compose.material.icons.outlined.SupportAgent
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -300,77 +291,6 @@ fun LoginScreen(
                                 )
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(18.dp))
-
-                        // Quick Demo Fill Row
-                        Text(
-                            text = "Quick Demo Login",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        val isCloud = uiState.baseUrl.contains("railway.app") || uiState.baseUrl.contains("help-desk-production")
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (isCloud) {
-                                OutlinedButton(
-                                    onClick = {
-                                        viewModel.onEmailChange("admin@example.com")
-                                        viewModel.onPasswordChange("vkUSXGMOIU_27b1q")
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.AdminPanelSettings,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Fill Cloud Admin Credentials", style = MaterialTheme.typography.labelSmall)
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = {
-                                        viewModel.onEmailChange("admin@helpdesk.local")
-                                        viewModel.onPasswordChange("admin12345")
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.AdminPanelSettings,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Admin", style = MaterialTheme.typography.labelSmall)
-                                }
-
-                                OutlinedButton(
-                                    onClick = {
-                                        viewModel.onEmailChange("sarah.agent@helpdesk.local")
-                                        viewModel.onPasswordChange("agent12345")
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.SupportAgent,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Agent", style = MaterialTheme.typography.labelSmall)
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -450,7 +370,7 @@ fun ServerSettingsDialog(
         text = {
             Column {
                 Text(
-                    text = "Specify the backend API address. Physical devices on Wi-Fi should use your PC's LAN IP, while USB devices use 127.0.0.1 (via adb reverse).",
+                    text = "Specify the backend API address. Use http://10.0.2.2:3000/ for Android Studio Emulator, http://127.0.0.1:3000/ with adb reverse, or your production server endpoint.",
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.5.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -460,7 +380,7 @@ fun ServerSettingsDialog(
                     value = url,
                     onValueChange = { url = it },
                     label = { Text("Base URL") },
-                    placeholder = { Text("http://192.168.1.39:3000/") },
+                    placeholder = { Text("http://10.0.2.2:3000/") },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -561,48 +481,20 @@ fun ServerSettingsDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Quick Presets:",
+                    text = "Presets:",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Presets Row 1 (Wi-Fi LAN & USB Loopback)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    val wifiLanUrl = "http://192.168.1.39:3000/"
-                    val usbLoopbackUrl = "http://127.0.0.1:3000/"
-
-                    OutlinedButton(
-                        onClick = { url = wifiLanUrl },
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Outlined.Wifi, contentDescription = null, modifier = Modifier.size(13.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Wi-Fi LAN", style = MaterialTheme.typography.labelSmall)
-                    }
-
-                    OutlinedButton(
-                        onClick = { url = usbLoopbackUrl },
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("USB/Local", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Presets Row 2 (Emulator & Cloud)
+                // Presets Row (Emulator, USB/Local, Cloud)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     val emulatorUrl = "http://10.0.2.2:3000/"
-                    val railwayUrl = "https://help-desk-production-4340.up.railway.app/"
+                    val usbLoopbackUrl = "http://127.0.0.1:3000/"
+                    val cloudUrl = "https://help-desk-production-4340.up.railway.app/"
 
                     OutlinedButton(
                         onClick = { url = emulatorUrl },
@@ -613,7 +505,15 @@ fun ServerSettingsDialog(
                     }
 
                     OutlinedButton(
-                        onClick = { url = railwayUrl },
+                        onClick = { url = usbLoopbackUrl },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("USB Local", style = MaterialTheme.typography.labelSmall)
+                    }
+
+                    OutlinedButton(
+                        onClick = { url = cloudUrl },
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.weight(1f)
                     ) {

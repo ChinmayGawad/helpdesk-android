@@ -2,6 +2,7 @@ package com.helpdesk.app.presentation.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.helpdesk.app.core.datastore.SessionManager
 import com.helpdesk.app.core.result.AppError
 import com.helpdesk.app.core.result.Resource
 import com.helpdesk.app.core.result.toUserMessage
@@ -32,9 +33,9 @@ sealed interface ConnectionTestStatus {
 }
 
 data class LoginUiState(
-    val email: String = "admin@helpdesk.local",
-    val password: String = "admin12345",
-    val baseUrl: String = "http://192.168.1.39:3000/",
+    val email: String = "",
+    val password: String = "",
+    val baseUrl: String = SessionManager.DEFAULT_BASE_URL,
     val isLoading: Boolean = false,
     val isCheckingSession: Boolean = true,
     val errorMessage: String? = null,
@@ -110,10 +111,10 @@ class LoginViewModel(
 
             val trimmed = rawUrl.trim()
             val withScheme = if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-                if (trimmed.contains("railway.app") || trimmed.contains("vercel.app") || trimmed.contains("render.com")) {
-                    "https://$trimmed"
-                } else {
+                if (trimmed.startsWith("localhost") || trimmed.startsWith("10.0.2.2") || trimmed.startsWith("127.0.0.1") || trimmed.startsWith("192.168.")) {
                     "http://$trimmed"
+                } else {
+                    "https://$trimmed"
                 }
             } else {
                 trimmed

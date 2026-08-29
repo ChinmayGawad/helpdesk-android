@@ -64,6 +64,14 @@ recordings/
 cmake-build-*/
 
 # ====================================================================
+# Gradle Wrapper (Must be tracked for CI and clean clones)
+# ====================================================================
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+!gradlew
+!gradlew.bat
+
+# ====================================================================
 # Keystores, Signing & Secrets
 # ====================================================================
 *.jks
@@ -71,6 +79,8 @@ cmake-build-*/
 *.key
 *.p12
 *.pem
+*.der
+*.bks
 signing.properties
 google-services.json
 
