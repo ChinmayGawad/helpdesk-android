@@ -1,49 +1,94 @@
-# Built application files
+# ====================================================================
+# Built Application & Package Files
+# ====================================================================
 *.apk
-*.aar
 *.ap_
 *.aab
+*.aar
 *.dex
-
-# Files for the ART/Dalvik VM
 *.class
 
-# Java / JVM / Kotlin
+# ====================================================================
+# Java, Kotlin & JVM
+# ====================================================================
 *.log
+*.tmp
+*.bak
+*.hprof
 .kotlin/
 
-# Location of the SDK. This is only used by Gradle and should not be checked into VCS.
+# ====================================================================
+# Local SDK & Environment Configuration
+# (Location of Android SDK and machine-specific configs)
+# ====================================================================
 local.properties
+secrets.properties
+keystore.properties
+*.private.properties
 
-# Gradle cache and temporary files
+# ====================================================================
+# Gradle Cache, Daemon & Build Artifacts
+# ====================================================================
 .gradle/
 build/
 app/build/
 */build/
+**/build/
+bin/
+gen/
+out/
+reports/
 
-# Android Studio & IntelliJ IDEA files
+# ====================================================================
+# Android Studio & IntelliJ IDEA
+# ====================================================================
 .idea/
 *.iml
 *.ipr
 *.iws
 .navigation/
 captures/
+profile-results/
+recordings/
+
+# ====================================================================
+# Visual Studio Code & Other Editors
+# ====================================================================
+.vscode/
+
+# ====================================================================
+# Native C/C++ Build Artifacts
+# ====================================================================
 .externalNativeBuild/
 .cxx/
+cmake-build-*/
 
-# Keystore files & credentials
+# ====================================================================
+# Keystores, Signing & Secrets
+# ====================================================================
 *.jks
 *.keystore
 *.key
 *.p12
+*.pem
 signing.properties
 google-services.json
 
-# OS & Editor files
+# ====================================================================
+# Operating System & Editor Temporary Files
+# ====================================================================
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
 Thumbs.db
 ehthumbs.db
 desktop.ini
+
+# Linux / Vim / Emacs
+*~
 *.swp
 *.swo
-*~
