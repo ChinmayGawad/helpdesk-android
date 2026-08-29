@@ -24,15 +24,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Sensors
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.SupportAgent
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -308,42 +312,63 @@ fun LoginScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
+                        val isCloud = uiState.baseUrl.contains("railway.app") || uiState.baseUrl.contains("help-desk-production")
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.onEmailChange("admin@helpdesk.local")
-                                    viewModel.onPasswordChange("admin12345")
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.AdminPanelSettings,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Admin", style = MaterialTheme.typography.labelSmall)
-                            }
+                            if (isCloud) {
+                                OutlinedButton(
+                                    onClick = {
+                                        viewModel.onEmailChange("admin@example.com")
+                                        viewModel.onPasswordChange("vkUSXGMOIU_27b1q")
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.AdminPanelSettings,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Fill Cloud Admin Credentials", style = MaterialTheme.typography.labelSmall)
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = {
+                                        viewModel.onEmailChange("admin@helpdesk.local")
+                                        viewModel.onPasswordChange("admin12345")
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.AdminPanelSettings,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Admin", style = MaterialTheme.typography.labelSmall)
+                                }
 
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.onEmailChange("sarah.agent@helpdesk.local")
-                                    viewModel.onPasswordChange("agent12345")
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.SupportAgent,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Agent", style = MaterialTheme.typography.labelSmall)
+                                OutlinedButton(
+                                    onClick = {
+                                        viewModel.onEmailChange("sarah.agent@helpdesk.local")
+                                        viewModel.onPasswordChange("agent12345")
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.SupportAgent,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Agent", style = MaterialTheme.typography.labelSmall)
+                                }
                             }
                         }
                     }
@@ -387,6 +412,8 @@ fun LoginScreen(
             if (uiState.showServerSettings) {
                 ServerSettingsDialog(
                     currentBaseUrl = uiState.baseUrl,
+                    connectionStatus = uiState.connectionStatus,
+                    onTestConnection = { url -> viewModel.testConnection(url) },
                     onDismiss = { viewModel.toggleServerSettings(false) },
                     onSave = { newUrl -> viewModel.saveBaseUrl(newUrl) }
                 )
@@ -398,10 +425,13 @@ fun LoginScreen(
 @Composable
 fun ServerSettingsDialog(
     currentBaseUrl: String,
+    connectionStatus: ConnectionTestStatus,
+    onTestConnection: (String) -> Unit,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
     var url by remember { mutableStateOf(currentBaseUrl) }
+    val isDark = isSystemInDarkTheme()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -414,47 +444,166 @@ fun ServerSettingsDialog(
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Backend Server Endpoint", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                Text("Server Host Endpoint", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
             }
         },
         text = {
             Column {
                 Text(
-                    text = "Specify the backend API address for sync, real-time ticket AI summaries, and user management.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Specify the backend API address. Physical devices on Wi-Fi should use your PC's LAN IP, while USB devices use 127.0.0.1 (via adb reverse).",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.5.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
                     label = { Text("Base URL") },
+                    placeholder = { Text("http://192.168.1.39:3000/") },
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Connection Test Action & Status Pill
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    OutlinedButton(
+                        onClick = { onTestConnection(url.trim()) },
+                        enabled = connectionStatus !is ConnectionTestStatus.Testing && url.isNotBlank(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        if (connectionStatus is ConnectionTestStatus.Testing) {
+                            CircularProgressIndicator(
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(14.dp),
+                                color = Primary
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Testing...", style = MaterialTheme.typography.labelSmall)
+                        } else {
+                            Icon(Icons.Outlined.Sensors, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Test Connection", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+
+                    when (connectionStatus) {
+                        is ConnectionTestStatus.Success -> {
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = Color(0xFFDCFCE7),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF86EFAC))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.CheckCircle,
+                                        contentDescription = null,
+                                        tint = Color(0xFF15803D),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Reachable (${connectionStatus.responseTimeMs}ms)",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp, fontWeight = FontWeight.Bold),
+                                        color = Color(0xFF15803D)
+                                    )
+                                }
+                            }
+                        }
+                        is ConnectionTestStatus.Failed -> {
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = Color(0xFFFEE2E2),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFCA5A5))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.ErrorOutline,
+                                        contentDescription = null,
+                                        tint = Color(0xFFB91C1C),
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Unreachable",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp, fontWeight = FontWeight.Bold),
+                                        color = Color(0xFFB91C1C)
+                                    )
+                                }
+                            }
+                        }
+                        else -> Unit
+                    }
+                }
+
+                if (connectionStatus is ConnectionTestStatus.Failed) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = connectionStatus.error,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
+
                 Text(
                     text = "Quick Presets:",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(6.dp))
+
+                // Presets Row 1 (Wi-Fi LAN & USB Loopback)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    val railwayUrl = "https://help-desk-production-4340.up.railway.app/"
-                    val localhostUrl = "http://localhost:3000"
-                    val emulatorUrl = "http://10.0.2.2:3000"
+                    val wifiLanUrl = "http://192.168.1.39:3000/"
+                    val usbLoopbackUrl = "http://127.0.0.1:3000/"
 
                     OutlinedButton(
-                        onClick = { url = railwayUrl },
+                        onClick = { url = wifiLanUrl },
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Cloud", style = MaterialTheme.typography.labelSmall)
+                        Icon(Icons.Outlined.Wifi, contentDescription = null, modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Wi-Fi LAN", style = MaterialTheme.typography.labelSmall)
                     }
+
+                    OutlinedButton(
+                        onClick = { url = usbLoopbackUrl },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("USB/Local", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Presets Row 2 (Emulator & Cloud)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val emulatorUrl = "http://10.0.2.2:3000/"
+                    val railwayUrl = "https://help-desk-production-4340.up.railway.app/"
+
                     OutlinedButton(
                         onClick = { url = emulatorUrl },
                         shape = RoundedCornerShape(8.dp),
@@ -462,12 +611,13 @@ fun ServerSettingsDialog(
                     ) {
                         Text("Emulator", style = MaterialTheme.typography.labelSmall)
                     }
+
                     OutlinedButton(
-                        onClick = { url = localhostUrl },
+                        onClick = { url = railwayUrl },
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Local", style = MaterialTheme.typography.labelSmall)
+                        Text("Cloud", style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }

@@ -7,6 +7,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import retrofit2.Response
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 
 private val errorJson = Json { ignoreUnknownKeys = true }
 
@@ -69,8 +72,14 @@ suspend fun <T, R> safeApiCall(
                 else -> Resource.Error(AppError.Server(code, errorMessage))
             }
         }
+    } catch (e: ConnectException) {
+        Resource.Error(AppError.Network("Cannot connect to server. Ensure backend is running and device is connected to the same network (or USB port is reversed)."))
+    } catch (e: SocketTimeoutException) {
+        Resource.Error(AppError.Network("Connection timed out. Server took too long to respond."))
+    } catch (e: UnknownHostException) {
+        Resource.Error(AppError.Network("Cannot resolve server host address. Please check your Server settings."))
     } catch (e: IOException) {
-        Resource.Error(AppError.Network(e.localizedMessage ?: "Network connection error"))
+        Resource.Error(AppError.Network(e.localizedMessage ?: "Network connection error. Please check your internet connection."))
     } catch (e: Exception) {
         Resource.Error(AppError.Unknown(e.localizedMessage ?: "An unexpected error occurred"))
     }

@@ -34,7 +34,7 @@ class SessionManager(private val context: Context) {
         val KEY_USER_JSON = stringPreferencesKey("user_json")
         val KEY_SESSION_TOKEN = stringPreferencesKey("session_token")
         val KEY_COOKIES = stringPreferencesKey("session_cookies")
-        const val DEFAULT_BASE_URL = "http://localhost:3000/"
+        const val DEFAULT_BASE_URL = "http://192.168.1.39:3000/"
     }
 
     val baseUrlFlow: Flow<String> = context.dataStore.data.map { preferences ->
@@ -95,7 +95,17 @@ class SessionManager(private val context: Context) {
     }
 
     suspend fun setBaseUrl(url: String) {
-        val formatted = if (url.endsWith("/")) url else "$url/"
+        val trimmed = url.trim()
+        val withScheme = if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            if (trimmed.contains("railway.app") || trimmed.contains("vercel.app") || trimmed.contains("render.com")) {
+                "https://$trimmed"
+            } else {
+                "http://$trimmed"
+            }
+        } else {
+            trimmed
+        }
+        val formatted = if (withScheme.endsWith("/")) withScheme else "$withScheme/"
         cachedBaseUrl.set(formatted)
         context.dataStore.edit { preferences ->
             preferences[KEY_BASE_URL] = formatted

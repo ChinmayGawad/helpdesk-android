@@ -11,6 +11,7 @@ import com.helpdesk.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.helpdesk.app.domain.usecase.auth.LoginUseCase
 import com.helpdesk.app.domain.usecase.auth.ObserveCurrentUserUseCase
 import com.helpdesk.app.domain.usecase.auth.SetBaseUrlUseCase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,15 +19,27 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.concurrent.TimeUnit
+
+sealed interface ConnectionTestStatus {
+    data object Idle : ConnectionTestStatus
+    data object Testing : ConnectionTestStatus
+    data class Success(val responseTimeMs: Long, val statusCode: Int) : ConnectionTestStatus
+    data class Failed(val error: String) : ConnectionTestStatus
+}
 
 data class LoginUiState(
     val email: String = "admin@helpdesk.local",
     val password: String = "admin12345",
-    val baseUrl: String = "http://localhost:3000/",
+    val baseUrl: String = "http://192.168.1.39:3000/",
     val isLoading: Boolean = false,
     val isCheckingSession: Boolean = true,
     val errorMessage: String? = null,
-    val showServerSettings: Boolean = false
+    val showServerSettings: Boolean = false,
+    val connectionStatus: ConnectionTestStatus = ConnectionTestStatus.Idle
 )
 
 class LoginViewModel(
@@ -43,6 +56,11 @@ class LoginViewModel(
     val currentUser: StateFlow<User?> = observeCurrentUserUseCase()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    private val probeClient = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .build()
+
     init {
         loadInitialConfig()
         checkExistingSession()
@@ -58,7 +76,7 @@ class LoginViewModel(
     fun checkExistingSession() {
         viewModelScope.launch {
             _uiState.update { it.copy(isCheckingSession = true) }
-            val result = getCurrentUserUseCase()
+            getCurrentUserUseCase()
             _uiState.update { it.copy(isCheckingSession = false) }
         }
     }
@@ -72,18 +90,69 @@ class LoginViewModel(
     }
 
     fun onBaseUrlChange(newBaseUrl: String) {
-        _uiState.update { it.copy(baseUrl = newBaseUrl) }
+        _uiState.update { it.copy(baseUrl = newBaseUrl, connectionStatus = ConnectionTestStatus.Idle) }
     }
 
     fun saveBaseUrl(newBaseUrl: String) {
         viewModelScope.launch {
             setBaseUrlUseCase(newBaseUrl)
-            _uiState.update { it.copy(baseUrl = newBaseUrl, showServerSettings = false) }
+            _uiState.update { it.copy(baseUrl = newBaseUrl, showServerSettings = false, connectionStatus = ConnectionTestStatus.Idle) }
         }
     }
 
     fun toggleServerSettings(show: Boolean) {
-        _uiState.update { it.copy(showServerSettings = show) }
+        _uiState.update { it.copy(showServerSettings = show, connectionStatus = ConnectionTestStatus.Idle) }
+    }
+
+    fun testConnection(rawUrl: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(connectionStatus = ConnectionTestStatus.Testing) }
+
+            val trimmed = rawUrl.trim()
+            val withScheme = if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+                if (trimmed.contains("railway.app") || trimmed.contains("vercel.app") || trimmed.contains("render.com")) {
+                    "https://$trimmed"
+                } else {
+                    "http://$trimmed"
+                }
+            } else {
+                trimmed
+            }
+            val formatted = if (withScheme.endsWith("/")) withScheme else "$withScheme/"
+            val probeUrl = "${formatted}api/me"
+
+            withContext(Dispatchers.IO) {
+                val start = System.currentTimeMillis()
+                try {
+                    val request = Request.Builder()
+                        .url(probeUrl)
+                        .get()
+                        .build()
+
+                    probeClient.newCall(request).execute().use { response ->
+                        val duration = System.currentTimeMillis() - start
+                        _uiState.update {
+                            it.copy(
+                                connectionStatus = ConnectionTestStatus.Success(
+                                    responseTimeMs = duration,
+                                    statusCode = response.code
+                                )
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    val errorMsg = when (e) {
+                        is java.net.ConnectException -> "Connection refused. Server is unreachable at this host/port."
+                        is java.net.SocketTimeoutException -> "Timed out (5s). Server is taking too long to respond."
+                        is java.net.UnknownHostException -> "Host name cannot be resolved."
+                        else -> e.localizedMessage ?: "Connection failed"
+                    }
+                    _uiState.update {
+                        it.copy(connectionStatus = ConnectionTestStatus.Failed(errorMsg))
+                    }
+                }
+            }
+        }
     }
 
     fun login() {
