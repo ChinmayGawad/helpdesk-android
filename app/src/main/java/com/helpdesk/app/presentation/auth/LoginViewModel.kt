@@ -20,9 +20,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class LoginUiState(
-    val email: String = "admin@example.com",
-    val password: String = "vkUSXGMOIU_27b1q",
-    val baseUrl: String = "https://help-desk-production-4340.up.railway.app/",
+    val email: String = "admin@helpdesk.local",
+    val password: String = "admin12345",
+    val baseUrl: String = "http://localhost:3000/",
     val isLoading: Boolean = false,
     val isCheckingSession: Boolean = true,
     val errorMessage: String? = null,

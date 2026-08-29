@@ -41,12 +41,9 @@ fun AppNavigation() {
         }
     }
 
-    val showBottomBar = currentRoute in listOf(
-        Screen.Dashboard.route,
-        Screen.Tickets.route,
-        "tickets",
-        Screen.Users.route
-    )
+    val showBottomBar = currentRoute?.startsWith("dashboard") == true ||
+            currentRoute?.startsWith("tickets") == true ||
+            currentRoute?.startsWith("users") == true
 
     Scaffold(
         bottomBar = {
@@ -81,10 +78,10 @@ fun AppNavigation() {
                     DashboardScreen(
                         currentUser = currentUser,
                         onNavigateToTickets = { status ->
-                            navController.navigate(Screen.Tickets.createRoute(status))
+                            navController.navigate(Screen.Tickets.createRoute(status = status))
                         },
                         onCreateTicketClick = {
-                            navController.navigate(Screen.Tickets.route)
+                            navController.navigate(Screen.Tickets.createRoute(create = true))
                         },
                         onLogout = {
                             navController.navigate(Screen.Auth.route) {
@@ -101,12 +98,18 @@ fun AppNavigation() {
                             type = NavType.StringType
                             nullable = true
                             defaultValue = null
+                        },
+                        navArgument("create") {
+                            type = NavType.BoolType
+                            defaultValue = false
                         }
                     )
                 ) { backStackEntry ->
                     val status = backStackEntry.arguments?.getString("status")
+                    val create = backStackEntry.arguments?.getBoolean("create") ?: false
                     TicketListScreen(
                         initialStatus = status,
+                        initialCreate = create,
                         onTicketClick = { ticketId ->
                             navController.navigate(Screen.TicketDetail.createRoute(ticketId))
                         }

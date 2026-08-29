@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
 class DynamicHostInterceptor(private val sessionManager: SessionManager) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
-        val currentBaseUrl = runBlocking { sessionManager.getBaseUrl() }
+        val currentBaseUrl = sessionManager.getCachedBaseUrl()
         val newHttpUrl = currentBaseUrl.toHttpUrlOrNull()
 
         if (newHttpUrl != null) {
@@ -38,7 +38,16 @@ class AuthInterceptor(
     private val sessionCookieJar: SessionCookieJar
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
+        var request = chain.request()
+
+        // Attach Authorization: Bearer <token> if cached session token is present
+        val token = sessionManager.getCachedToken()
+        if (!token.isNullOrBlank() && request.header("Authorization") == null) {
+            request = request.newBuilder()
+                .header("Authorization", "Bearer $token")
+                .build()
+        }
+
         val response = chain.proceed(request)
 
         if (response.code == 401 && !request.url.encodedPath.contains("sign-in")) {
@@ -75,7 +84,7 @@ object NetworkClient {
     }
 
     fun createApiService(okHttpClient: OkHttpClient, sessionManager: SessionManager): HelpdeskApiService {
-        val initialBaseUrl = runBlocking { sessionManager.getBaseUrl() }
+        val initialBaseUrl = sessionManager.getCachedBaseUrl()
         val json = Json {
             ignoreUnknownKeys = true
             coerceInputValues = true

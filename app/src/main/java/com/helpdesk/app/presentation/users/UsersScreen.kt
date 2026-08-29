@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -114,13 +115,15 @@ fun UsersScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.openCreateDialog() },
-                containerColor = Primary,
-                contentColor = Color.White,
-                shape = CircleShape
-            ) {
-                Icon(Icons.Outlined.Add, contentDescription = "Add User", modifier = Modifier.size(24.dp))
+            if (currentUser?.role == UserRole.ADMIN) {
+                FloatingActionButton(
+                    onClick = { viewModel.openCreateDialog() },
+                    containerColor = Primary,
+                    contentColor = Color.White,
+                    shape = CircleShape
+                ) {
+                    Icon(Icons.Outlined.Add, contentDescription = "Add User", modifier = Modifier.size(24.dp))
+                }
             }
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -193,13 +196,19 @@ fun UsersScreen(
                 )
             }
 
-            if (uiState.isLoading && uiState.users.isEmpty()) {
+            if (currentUser != null && currentUser?.role != UserRole.ADMIN) {
+                EmptyState(
+                    title = "Access Restricted",
+                    description = "Team member management and agent administration is restricted to Administrators.",
+                    icon = Icons.Outlined.AdminPanelSettings
+                )
+            } else if (uiState.isLoading && uiState.users.isEmpty()) {
                 ShimmerLoadingList(count = 5)
             } else if (filteredUsers.isEmpty()) {
                 EmptyState(
                     title = "No team members found",
                     description = "No team members match your query. Add a new agent or administrator to collaborate.",
-                    actionLabel = "Add Team Member",
+                    actionLabel = if (currentUser?.role == UserRole.ADMIN) "Add Team Member" else null,
                     onAction = { viewModel.openCreateDialog() }
                 )
             } else {

@@ -314,8 +314,8 @@ fun LoginScreen(
                         ) {
                             OutlinedButton(
                                 onClick = {
-                                    viewModel.onEmailChange("admin@example.com")
-                                    viewModel.onPasswordChange("vkUSXGMOIU_27b1q")
+                                    viewModel.onEmailChange("admin@helpdesk.local")
+                                    viewModel.onPasswordChange("admin12345")
                                 },
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.weight(1f)
@@ -331,7 +331,7 @@ fun LoginScreen(
 
                             OutlinedButton(
                                 onClick = {
-                                    viewModel.onEmailChange("agent@example.com")
+                                    viewModel.onEmailChange("sarah.agent@helpdesk.local")
                                     viewModel.onPasswordChange("agent12345")
                                 },
                                 shape = RoundedCornerShape(8.dp),

@@ -181,23 +181,28 @@ fun TicketDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    // Status Badge with Dropdown Affordance
-                                    Surface(
-                                        shape = RoundedCornerShape(50),
-                                        color = Color.Transparent,
-                                        modifier = Modifier.clickable { viewModel.toggleStatusSheet(true) }
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically
+                                    // Status Badge with Dropdown Affordance (Admin Only)
+                                    val isAdmin = currentUser?.role == UserRole.ADMIN
+                                    if (isAdmin) {
+                                        Surface(
+                                            shape = RoundedCornerShape(50),
+                                            color = Color.Transparent,
+                                            modifier = Modifier.clickable { viewModel.toggleStatusSheet(true) }
                                         ) {
-                                            StatusBadge(status = ticket.status)
-                                            Icon(
-                                                imageVector = Icons.Outlined.ArrowDropDown,
-                                                contentDescription = "Change status",
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(16.dp)
-                                            )
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                StatusBadge(status = ticket.status)
+                                                Icon(
+                                                    imageVector = Icons.Outlined.ArrowDropDown,
+                                                    contentDescription = "Change status",
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
                                         }
+                                    } else {
+                                        StatusBadge(status = ticket.status)
                                     }
 
                                     CategoryBadge(category = ticket.category)

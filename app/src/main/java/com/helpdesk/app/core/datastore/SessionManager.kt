@@ -8,24 +8,33 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.helpdesk.app.domain.model.User
 import com.helpdesk.app.domain.model.UserRole
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.util.concurrent.atomic.AtomicReference
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "helpdesk_session")
 
 class SessionManager(private val context: Context) {
 
     private val json = Json { ignoreUnknownKeys = true }
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private val cachedBaseUrl = AtomicReference(DEFAULT_BASE_URL)
+    private val cachedToken = AtomicReference<String?>(null)
 
     companion object {
         val KEY_BASE_URL = stringPreferencesKey("base_url")
         val KEY_USER_JSON = stringPreferencesKey("user_json")
         val KEY_SESSION_TOKEN = stringPreferencesKey("session_token")
         val KEY_COOKIES = stringPreferencesKey("session_cookies")
-        const val DEFAULT_BASE_URL = "https://help-desk-production-4340.up.railway.app/"
+        const val DEFAULT_BASE_URL = "http://localhost:3000/"
     }
 
     val baseUrlFlow: Flow<String> = context.dataStore.data.map { preferences ->
@@ -60,18 +69,43 @@ class SessionManager(private val context: Context) {
         preferences[KEY_COOKIES]
     }
 
+    init {
+        scope.launch {
+            baseUrlFlow.collect { url ->
+                cachedBaseUrl.set(url)
+            }
+        }
+        scope.launch {
+            sessionTokenFlow.collect { token ->
+                cachedToken.set(token)
+            }
+        }
+    }
+
+    fun getCachedBaseUrl(): String = cachedBaseUrl.get()
+
+    fun getCachedToken(): String? = cachedToken.get()
+
     suspend fun getBaseUrl(): String {
         return context.dataStore.data.map { it[KEY_BASE_URL] ?: DEFAULT_BASE_URL }.firstOrNull() ?: DEFAULT_BASE_URL
     }
 
+    suspend fun getSessionToken(): String? {
+        return context.dataStore.data.map { it[KEY_SESSION_TOKEN] }.firstOrNull()
+    }
+
     suspend fun setBaseUrl(url: String) {
         val formatted = if (url.endsWith("/")) url else "$url/"
+        cachedBaseUrl.set(formatted)
         context.dataStore.edit { preferences ->
             preferences[KEY_BASE_URL] = formatted
         }
     }
 
     suspend fun saveSession(user: User, token: String? = null) {
+        if (!token.isNullOrBlank()) {
+            cachedToken.set(token)
+        }
         val cached = CachedUser(
             id = user.id,
             name = user.name,
@@ -94,6 +128,7 @@ class SessionManager(private val context: Context) {
     }
 
     suspend fun clearSession() {
+        cachedToken.set(null)
         context.dataStore.edit { preferences ->
             preferences.remove(KEY_USER_JSON)
             preferences.remove(KEY_SESSION_TOKEN)

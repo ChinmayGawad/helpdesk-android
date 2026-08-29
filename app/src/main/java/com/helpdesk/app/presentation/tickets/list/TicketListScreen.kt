@@ -82,6 +82,7 @@ import com.helpdesk.app.presentation.common.ErrorBanner
 import com.helpdesk.app.presentation.common.LoadingState
 import com.helpdesk.app.presentation.common.ShimmerLoadingList
 import com.helpdesk.app.presentation.common.StatusBadge
+import androidx.compose.runtime.LaunchedEffect
 import com.helpdesk.app.presentation.tickets.create.CreateTicketBottomSheet
 import org.koin.androidx.compose.koinViewModel
 
@@ -90,10 +91,23 @@ import org.koin.androidx.compose.koinViewModel
 fun TicketListScreen(
     onTicketClick: (String) -> Unit,
     initialStatus: String? = null,
+    initialCreate: Boolean = false,
     viewModel: TicketListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isDark = isSystemInDarkTheme()
+
+    LaunchedEffect(initialStatus) {
+        if (!initialStatus.isNullOrBlank()) {
+            viewModel.onStatusFilterSelect(TicketStatus.fromValue(initialStatus))
+        }
+    }
+
+    LaunchedEffect(initialCreate) {
+        if (initialCreate) {
+            viewModel.toggleCreateDialog(true)
+        }
+    }
 
     val hasActiveFilters = uiState.selectedCategory != null ||
             uiState.selectedSource != null ||

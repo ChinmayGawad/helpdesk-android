@@ -8,8 +8,9 @@
 # Files for the ART/Dalvik VM
 *.class
 
-# Java / JVM
+# Java / JVM / Kotlin
 *.log
+.kotlin/
 
 # Location of the SDK. This is only used by Gradle and should not be checked into VCS.
 local.properties
@@ -30,12 +31,19 @@ captures/
 .externalNativeBuild/
 .cxx/
 
-# Keystore files
+# Keystore files & credentials
 *.jks
 *.keystore
 *.key
+*.p12
 signing.properties
+google-services.json
 
-# OS files
+# OS & Editor files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+desktop.ini
+*.swp
+*.swo
+*~

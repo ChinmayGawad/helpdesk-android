@@ -3,7 +3,6 @@ package com.helpdesk.app.data.repository
 import com.helpdesk.app.core.datastore.SessionManager
 import com.helpdesk.app.core.network.HelpdeskApiService
 import com.helpdesk.app.core.network.SessionCookieJar
-import com.helpdesk.app.core.result.AppError
 import com.helpdesk.app.core.result.Resource
 import com.helpdesk.app.data.mapper.toDomain
 import com.helpdesk.app.data.remote.dto.SignInRequest
@@ -18,9 +17,11 @@ class AuthRepositoryImpl(
 ) : AuthRepository {
 
     override suspend fun login(email: String, password: String): Resource<User> {
+        var token: String? = null
         val result = safeApiCall(
             apiCall = { apiService.signIn(SignInRequest(email, password)) },
             transform = { response ->
+                token = response.token ?: response.session?.token
                 val userDto = response.user
                 if (userDto != null) {
                     userDto.toDomain()
@@ -31,7 +32,7 @@ class AuthRepositoryImpl(
         )
 
         if (result is Resource.Success) {
-            sessionManager.saveSession(result.data)
+            sessionManager.saveSession(result.data, token)
         }
         return result
     }
@@ -55,7 +56,8 @@ class AuthRepositoryImpl(
             transform = { it.user.toDomain() }
         )
         if (result is Resource.Success) {
-            sessionManager.saveSession(result.data)
+            val existingToken = sessionManager.getSessionToken()
+            sessionManager.saveSession(result.data, existingToken)
         }
         return result
     }

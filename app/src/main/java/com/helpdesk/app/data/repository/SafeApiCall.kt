@@ -54,6 +54,7 @@ suspend fun <T, R> safeApiCall(
                         Resource.Error(AppError.Unauthorized)
                     }
                 }
+                403 -> Resource.Error(AppError.Forbidden(if (errorMessage.startsWith("Request failed")) "Permission denied. Admin role required." else errorMessage))
                 429 -> Resource.Error(
                     AppError.Server(
                         429,
