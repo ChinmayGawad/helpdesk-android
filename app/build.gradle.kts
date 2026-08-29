@@ -22,10 +22,35 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = project.findProperty("KEYSTORE_FILE") as String?
+                ?: System.getenv("KEYSTORE_FILE")
+            if (keystorePath != null && file(keystorePath).exists()) {
+                storeFile = file(keystorePath)
+                storePassword = project.findProperty("KEYSTORE_PASSWORD") as String?
+                    ?: System.getenv("KEYSTORE_PASSWORD") ?: ""
+                keyAlias = project.findProperty("KEY_ALIAS") as String?
+                    ?: System.getenv("KEY_ALIAS") ?: ""
+                keyPassword = project.findProperty("KEY_PASSWORD") as String?
+                    ?: System.getenv("KEY_PASSWORD") ?: ""
+            } else {
+                val debugSigning = getByName("debug")
+                storeFile = debugSigning.storeFile
+                storePassword = debugSigning.storePassword
+                keyAlias = debugSigning.keyAlias
+                keyPassword = debugSigning.keyPassword
+            }
+            enableV1Signing = true
+            enableV2Signing = true
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

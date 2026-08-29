@@ -232,7 +232,7 @@ Output: `android/app/build/outputs/apk/debug/app-debug.apk`
 # Windows
 .\gradlew.bat assembleRelease
 ```
-Output: `android/app/build/outputs/apk/release/app-release-unsigned.apk`
+Output: `android/app/build/outputs/apk/release/app-release.apk` (Signed)
 
 ### Clean Build Cache
 ```bash
