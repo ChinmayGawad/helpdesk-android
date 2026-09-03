@@ -13,8 +13,14 @@ android {
         applicationId = "com.helpdesk.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
+
+        buildConfigField(
+            "String",
+            "DEFAULT_API_BASE_URL",
+            "\"${System.getenv("HELPDESK_API_BASE_URL") ?: "https://help-desk-production-4340.up.railway.app/"}\""
+        )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -26,7 +32,14 @@ android {
         create("release") {
             val keystorePath = project.findProperty("KEYSTORE_FILE") as String?
                 ?: System.getenv("KEYSTORE_FILE")
-            if (keystorePath != null && file(keystorePath).exists()) {
+            val releaseRequested = gradle.startParameter.taskNames.any {
+                it.contains("release", ignoreCase = true)
+            }
+            if (releaseRequested) {
+                require(keystorePath != null && file(keystorePath).exists()) {
+                    "Release build requires a signing keystore. Provide KEYSTORE_FILE " +
+                        "(project property or env var) pointing to a .jks/.keystore file."
+                }
                 storeFile = file(keystorePath)
                 storePassword = project.findProperty("KEYSTORE_PASSWORD") as String?
                     ?: System.getenv("KEYSTORE_PASSWORD") ?: ""
@@ -34,15 +47,9 @@ android {
                     ?: System.getenv("KEY_ALIAS") ?: ""
                 keyPassword = project.findProperty("KEY_PASSWORD") as String?
                     ?: System.getenv("KEY_PASSWORD") ?: ""
-            } else {
-                val debugSigning = getByName("debug")
-                storeFile = debugSigning.storeFile
-                storePassword = debugSigning.storePassword
-                keyAlias = debugSigning.keyAlias
-                keyPassword = debugSigning.keyPassword
+                enableV1Signing = true
+                enableV2Signing = true
             }
-            enableV1Signing = true
-            enableV2Signing = true
         }
     }
 
@@ -68,6 +75,7 @@ android {
         compose = true
         buildConfig = true
     }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -105,6 +113,15 @@ dependencies {
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
+
+    // Image Loading
+    implementation(libs.coil.compose)
+
+    // Logging
+    implementation(libs.timber)
+
+    // Debug — Memory Leak Detection (debug only)
+    debugImplementation(libs.leakcanary.android)
 
     // Unit Testing
     testImplementation(libs.junit)

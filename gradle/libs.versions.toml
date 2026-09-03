@@ -1,18 +1,21 @@
 [versions]
-agp = "8.4.2"
-kotlin = "2.0.0"
-composeBom = "2024.06.00"
-activityCompose = "1.9.0"
-lifecycleCompose = "2.8.3"
-navigationCompose = "2.7.7"
+agp = "8.5.2"
+kotlin = "2.0.21"
+composeBom = "2024.09.00"
+activityCompose = "1.9.3"
+lifecycleCompose = "2.8.7"
+navigationCompose = "2.8.3"
 koin = "3.5.6"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
-kotlinxSerialization = "1.6.3"
+kotlinxSerialization = "1.7.3"
 kotlinxCoroutines = "1.8.1"
 datastore = "1.1.1"
-materialIconsExtended = "1.6.8"
+materialIconsExtended = "1.7.5"
 junit = "4.13.2"
+coil = "2.6.0"
+timber = "5.0.1"
+leakcanary = "2.14"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.13.1" }
@@ -47,6 +50,15 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 
 # DataStore
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+
+# Image Loading
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
+# Logging
+timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
+
+# Debug — Memory Leak Detection
+leakcanary-android = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
