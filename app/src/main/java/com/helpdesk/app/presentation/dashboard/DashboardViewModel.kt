@@ -6,16 +6,12 @@ import com.helpdesk.app.core.result.Resource
 import com.helpdesk.app.core.result.toUserMessage
 import com.helpdesk.app.domain.model.DailyStat
 import com.helpdesk.app.domain.model.TicketStats
-import com.helpdesk.app.domain.model.User
 import com.helpdesk.app.domain.usecase.auth.LogoutUseCase
-import com.helpdesk.app.domain.usecase.auth.ObserveCurrentUserUseCase
 import com.helpdesk.app.domain.usecase.ticket.GetDailyStatsUseCase
 import com.helpdesk.app.domain.usecase.ticket.GetTicketStatsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -30,8 +26,7 @@ data class DashboardUiState(
 class DashboardViewModel(
     private val getTicketStatsUseCase: GetTicketStatsUseCase,
     private val getDailyStatsUseCase: GetDailyStatsUseCase,
-    private val logoutUseCase: LogoutUseCase,
-    observeCurrentUserUseCase: ObserveCurrentUserUseCase? = null
+    private val logoutUseCase: LogoutUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())

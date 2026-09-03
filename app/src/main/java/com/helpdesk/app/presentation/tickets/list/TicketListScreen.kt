@@ -8,6 +8,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
@@ -83,6 +86,7 @@ import com.helpdesk.app.presentation.common.LoadingState
 import com.helpdesk.app.presentation.common.ShimmerLoadingList
 import com.helpdesk.app.presentation.common.StatusBadge
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import com.helpdesk.app.presentation.tickets.create.CreateTicketBottomSheet
 import org.koin.androidx.compose.koinViewModel
 
@@ -175,212 +179,213 @@ fun TicketListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Search Input Header
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 1.dp
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = uiState.searchQuery,
-                        onValueChange = { viewModel.onSearchQueryChange(it) },
-                        placeholder = {
-                            Text(
-                                "Search subject, issue or customer...",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp)
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Outlined.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        },
-                        trailingIcon = {
-                            if (uiState.searchQuery.isNotBlank()) {
-                                IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                    // Search Input Header
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 1.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = uiState.searchQuery,
+                                onValueChange = { viewModel.onSearchQueryChange(it) },
+                                placeholder = {
+                                    Text(
+                                        "Search subject, issue or customer...",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp)
+                                    )
+                                },
+                                leadingIcon = {
                                     Icon(
-                                        Icons.Outlined.Clear,
-                                        contentDescription = "Clear search",
+                                        Icons.Outlined.Search,
+                                        contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(18.dp)
                                     )
-                                }
+                                },
+                                trailingIcon = {
+                                    if (uiState.searchQuery.isNotBlank()) {
+                                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                                            Icon(
+                                                Icons.Outlined.Clear,
+                                                contentDescription = "Clear search",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Status Filter Chips Row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilterChip(
+                                    selected = uiState.selectedStatus == null,
+                                    onClick = { viewModel.onStatusFilterSelect(null) },
+                                    label = { Text("All", style = MaterialTheme.typography.labelSmall) },
+                                    shape = RoundedCornerShape(50),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Primary,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                                FilterChip(
+                                    selected = uiState.selectedStatus == TicketStatus.OPEN,
+                                    onClick = { viewModel.onStatusFilterSelect(if (uiState.selectedStatus == TicketStatus.OPEN) null else TicketStatus.OPEN) },
+                                    label = { Text("Open", style = MaterialTheme.typography.labelSmall) },
+                                    shape = RoundedCornerShape(50),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Primary,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                                FilterChip(
+                                    selected = uiState.selectedStatus == TicketStatus.PROCESSING,
+                                    onClick = { viewModel.onStatusFilterSelect(if (uiState.selectedStatus == TicketStatus.PROCESSING) null else TicketStatus.PROCESSING) },
+                                    label = { Text("In Progress", style = MaterialTheme.typography.labelSmall) },
+                                    shape = RoundedCornerShape(50),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Primary,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                                FilterChip(
+                                    selected = uiState.selectedStatus == TicketStatus.RESOLVED,
+                                    onClick = { viewModel.onStatusFilterSelect(if (uiState.selectedStatus == TicketStatus.RESOLVED) null else TicketStatus.RESOLVED) },
+                                    label = { Text("Resolved", style = MaterialTheme.typography.labelSmall) },
+                                    shape = RoundedCornerShape(50),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Primary,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                                FilterChip(
+                                    selected = uiState.selectedStatus == TicketStatus.CLOSED,
+                                    onClick = { viewModel.onStatusFilterSelect(if (uiState.selectedStatus == TicketStatus.CLOSED) null else TicketStatus.CLOSED) },
+                                    label = { Text("Closed", style = MaterialTheme.typography.labelSmall) },
+                                    shape = RoundedCornerShape(50),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Primary,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
                             }
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                        )
-                    )
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Status Filter Chips Row
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilterChip(
-                            selected = uiState.selectedStatus == null,
-                            onClick = { viewModel.onStatusFilterSelect(null) },
-                            label = { Text("All", style = MaterialTheme.typography.labelSmall) },
-                            shape = RoundedCornerShape(50),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Primary,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                        FilterChip(
-                            selected = uiState.selectedStatus == TicketStatus.OPEN,
-                            onClick = { viewModel.onStatusFilterSelect(if (uiState.selectedStatus == TicketStatus.OPEN) null else TicketStatus.OPEN) },
-                            label = { Text("Open", style = MaterialTheme.typography.labelSmall) },
-                            shape = RoundedCornerShape(50),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Primary,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                        FilterChip(
-                            selected = uiState.selectedStatus == TicketStatus.PROCESSING,
-                            onClick = { viewModel.onStatusFilterSelect(if (uiState.selectedStatus == TicketStatus.PROCESSING) null else TicketStatus.PROCESSING) },
-                            label = { Text("In Progress", style = MaterialTheme.typography.labelSmall) },
-                            shape = RoundedCornerShape(50),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Primary,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                        FilterChip(
-                            selected = uiState.selectedStatus == TicketStatus.RESOLVED,
-                            onClick = { viewModel.onStatusFilterSelect(if (uiState.selectedStatus == TicketStatus.RESOLVED) null else TicketStatus.RESOLVED) },
-                            label = { Text("Resolved", style = MaterialTheme.typography.labelSmall) },
-                            shape = RoundedCornerShape(50),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Primary,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                        FilterChip(
-                            selected = uiState.selectedStatus == TicketStatus.CLOSED,
-                            onClick = { viewModel.onStatusFilterSelect(if (uiState.selectedStatus == TicketStatus.CLOSED) null else TicketStatus.CLOSED) },
-                            label = { Text("Closed", style = MaterialTheme.typography.labelSmall) },
-                            shape = RoundedCornerShape(50),
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Primary,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (!uiState.errorMessage.isNullOrBlank()) {
-                ErrorBanner(
-                    message = uiState.errorMessage ?: "",
-                    onRetry = { viewModel.loadTickets() },
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                )
-            }
-
-            if (uiState.isLoading && uiState.tickets.isEmpty()) {
-                ShimmerLoadingList(count = 5)
-            } else if (uiState.tickets.isEmpty()) {
-                EmptyState(
-                    title = "No tickets found",
-                    description = "No tickets match your query. Try clearing filters or creating a new support ticket.",
-                    actionLabel = "Create Ticket",
-                    onAction = { viewModel.toggleCreateDialog(true) }
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    item {
-                        Spacer(modifier = Modifier.height(2.dp))
-                    }
-
-                    items(uiState.tickets, key = { it.id }) { ticket ->
-                        TicketItemCard(
-                            ticket = ticket,
-                            onClick = { onTicketClick(ticket.id) }
+                    if (!uiState.errorMessage.isNullOrBlank()) {
+                        ErrorBanner(
+                            message = uiState.errorMessage ?: "",
+                            onRetry = { viewModel.loadTickets() },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                         )
                     }
 
-                    // Pagination Footer
-                    item {
-                        val pagination = uiState.pagination
-                        if (pagination != null && pagination.totalPages > 1) {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 14.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .border(
-                                        1.dp,
-                                        MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.3f else 0.6f),
-                                        RoundedCornerShape(12.dp)
-                                    ),
-                                color = MaterialTheme.colorScheme.surface
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    OutlinedButton(
-                                        onClick = { viewModel.loadTickets(page = uiState.currentPage - 1) },
-                                        enabled = uiState.currentPage > 1,
-                                        shape = RoundedCornerShape(8.dp)
+                    if (uiState.isLoading && uiState.tickets.isEmpty()) {
+                        ShimmerLoadingList(count = 5)
+                    } else if (uiState.tickets.isEmpty()) {
+                        EmptyState(
+                            title = "No tickets found",
+                            description = "No tickets match your query. Try clearing filters or creating a new support ticket.",
+                            actionLabel = "Create Ticket",
+                            onAction = { viewModel.toggleCreateDialog(true) }
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            item {
+                                Spacer(modifier = Modifier.height(2.dp))
+                            }
+
+                            items(uiState.tickets, key = { it.id }) { ticket ->
+                                TicketItemCard(
+                                    ticket = ticket,
+                                    onClick = { onTicketClick(ticket.id) }
+                                )
+                            }
+
+                            // Pagination Footer
+                            item {
+                                val pagination = uiState.pagination
+                                if (pagination != null && pagination.totalPages > 1) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 14.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .border(
+                                                1.dp,
+                                                MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.3f else 0.6f),
+                                                RoundedCornerShape(12.dp)
+                                            ),
+                                        color = MaterialTheme.colorScheme.surface
                                     ) {
-                                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null, modifier = Modifier.size(14.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Prev", style = MaterialTheme.typography.labelSmall)
-                                    }
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            OutlinedButton(
+                                                onClick = { viewModel.loadTickets(page = uiState.currentPage - 1) },
+                                                enabled = uiState.currentPage > 1,
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Prev", style = MaterialTheme.typography.labelSmall)
+                                            }
 
-                                    Text(
-                                        text = "Page ${uiState.currentPage} of ${pagination.totalPages}",
-                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                            Text(
+                                                text = "Page ${uiState.currentPage} of ${pagination.totalPages}",
+                                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
 
-                                    OutlinedButton(
-                                        onClick = { viewModel.loadTickets(page = uiState.currentPage + 1) },
-                                        enabled = uiState.currentPage < pagination.totalPages,
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text("Next", style = MaterialTheme.typography.labelSmall)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
+                                            OutlinedButton(
+                                                onClick = { viewModel.loadTickets(page = uiState.currentPage + 1) },
+                                                enabled = uiState.currentPage < pagination.totalPages,
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text("Next", style = MaterialTheme.typography.labelSmall)
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, modifier = Modifier.size(14.dp))
+                                            }
+                                        }
                                     }
+                                } else {
+                                    Spacer(modifier = Modifier.height(72.dp))
                                 }
                             }
-                        } else {
-                            Spacer(modifier = Modifier.height(72.dp))
                         }
                     }
-                }
             }
-        }
 
         // Create Ticket Bottom Sheet
         if (uiState.showCreateDialog) {
@@ -708,5 +713,3 @@ fun FilterAndSortBottomSheet(
         }
     }
 }
-
-

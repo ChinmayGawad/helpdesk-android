@@ -1,3 +1,7 @@
+/**
+ * Color palette for the app: primary/secondary brand colors, semantic status colors,
+ * light/dark theme variants, and AI accent colors. All values are Material 3–compatible.
+ */
 package com.helpdesk.app.core.theme
 
 import androidx.compose.ui.graphics.Color
@@ -54,18 +58,6 @@ val StatusResolvedTextDark = Color(0xFF86EFAC) // Green 300
 val StatusClosedBgDark = Color(0xFF1E293B) // Slate 800
 val StatusClosedTextDark = Color(0xFF94A3B8) // Slate 400
 
-// Legacy compatibility aliases
-val StatusNewBg = StatusNewBgLight
-val StatusNewText = StatusNewTextLight
-val StatusProcessingBg = StatusProcessingBgLight
-val StatusProcessingText = StatusProcessingTextLight
-val StatusOpenBg = StatusOpenBgLight
-val StatusOpenText = StatusOpenTextLight
-val StatusResolvedBg = StatusResolvedBgLight
-val StatusResolvedText = StatusResolvedTextLight
-val StatusClosedBg = StatusClosedBgLight
-val StatusClosedText = StatusClosedTextLight
-
 // Category Colors - Light
 val CatGeneralBgLight = Color(0xFFF1F5F9)
 val CatGeneralTextLight = Color(0xFF475569)
@@ -92,11 +84,6 @@ val AiCardTextLight = Color(0xFF6B21A8) // Violet 800
 val AiCardBgDark = Color(0xFF1E1B4B) // Indigo 950
 val AiCardBorderDark = Color(0xFF4338CA) // Indigo 700
 val AiCardTextDark = Color(0xFFC7D2FE) // Indigo 200
-
-// Legacy aliases
-val AiCardBg = AiCardBgLight
-val AiCardBorder = AiCardBorderLight
-val AiCardText = AiCardTextLight
 
 // Error & Danger
 val ErrorRed = Color(0xFFEF4444)

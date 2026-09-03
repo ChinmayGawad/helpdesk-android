@@ -86,8 +86,8 @@ fun LoginScreen(
     val isDark = isSystemInDarkTheme()
     var passwordVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(currentUser) {
-        if (currentUser != null) {
+    LaunchedEffect(uiState.loginSucceeded, currentUser) {
+        if (uiState.loginSucceeded || currentUser != null) {
             onLoginSuccess()
         }
     }
@@ -494,7 +494,7 @@ fun ServerSettingsDialog(
                 ) {
                     val emulatorUrl = "http://10.0.2.2:3000/"
                     val usbLoopbackUrl = "http://127.0.0.1:3000/"
-                    val cloudUrl = "https://help-desk-production-4340.up.railway.app/"
+                    val cloudUrl = com.helpdesk.app.BuildConfig.DEFAULT_API_BASE_URL
 
                     OutlinedButton(
                         onClick = { url = emulatorUrl },
@@ -538,4 +538,3 @@ fun ServerSettingsDialog(
         }
     )
 }
-

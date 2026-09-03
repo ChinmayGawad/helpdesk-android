@@ -16,6 +16,7 @@ import com.helpdesk.app.domain.usecase.ticket.PolishReplyUseCase
 import com.helpdesk.app.domain.usecase.ticket.SummarizeTicketUseCase
 import com.helpdesk.app.domain.usecase.ticket.UpdateTicketUseCase
 import com.helpdesk.app.domain.usecase.user.GetUsersUseCase
+import timber.log.Timber
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -102,8 +103,15 @@ class TicketDetailViewModel(
     private fun loadAgents() {
         viewModelScope.launch {
             val result = getUsersUseCase()
-            if (result is Resource.Success) {
-                _uiState.update { it.copy(availableAgents = result.data) }
+            when (result) {
+                is Resource.Success -> {
+                    _uiState.update { it.copy(availableAgents = result.data) }
+                }
+                is Resource.Error -> {
+                    Timber.w("Failed to load agents: ${result.error.toUserMessage()}")
+                    _uiState.update { it.copy(errorMessage = "Failed to load agents: ${result.error.toUserMessage()}") }
+                }
+                is Resource.Loading -> Unit
             }
         }
     }

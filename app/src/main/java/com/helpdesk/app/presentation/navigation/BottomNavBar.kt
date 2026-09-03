@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.helpdesk.app.core.theme.Primary
 import com.helpdesk.app.domain.model.User
@@ -50,12 +49,10 @@ fun BottomNavBar(
                 label = { Text(item.title, style = MaterialTheme.typography.labelSmall) },
                 selected = isSelected,
                 onClick = {
-                    navController.navigate(item.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
+                    val targetRoute = item.route.split("?")[0]
+                    navController.navigate(targetRoute) {
+                        popUpTo(targetRoute)
                         launchSingleTop = true
-                        restoreState = true
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(

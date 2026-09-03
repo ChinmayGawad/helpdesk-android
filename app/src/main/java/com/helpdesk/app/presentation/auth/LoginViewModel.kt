@@ -3,6 +3,7 @@ package com.helpdesk.app.presentation.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.helpdesk.app.core.datastore.SessionManager
+import com.helpdesk.app.BuildConfig
 import com.helpdesk.app.core.result.AppError
 import com.helpdesk.app.core.result.Resource
 import com.helpdesk.app.core.result.toUserMessage
@@ -12,6 +13,7 @@ import com.helpdesk.app.domain.usecase.auth.GetCurrentUserUseCase
 import com.helpdesk.app.domain.usecase.auth.LoginUseCase
 import com.helpdesk.app.domain.usecase.auth.ObserveCurrentUserUseCase
 import com.helpdesk.app.domain.usecase.auth.SetBaseUrlUseCase
+import com.helpdesk.app.core.util.BaseUrlNormalizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,10 +37,11 @@ sealed interface ConnectionTestStatus {
 data class LoginUiState(
     val email: String = "",
     val password: String = "",
-    val baseUrl: String = SessionManager.DEFAULT_BASE_URL,
+    val baseUrl: String = BuildConfig.DEFAULT_API_BASE_URL,
     val isLoading: Boolean = false,
     val isCheckingSession: Boolean = true,
     val errorMessage: String? = null,
+    val loginSucceeded: Boolean = false,
     val showServerSettings: Boolean = false,
     val connectionStatus: ConnectionTestStatus = ConnectionTestStatus.Idle
 )
@@ -109,17 +112,7 @@ class LoginViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(connectionStatus = ConnectionTestStatus.Testing) }
 
-            val trimmed = rawUrl.trim()
-            val withScheme = if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-                if (trimmed.startsWith("localhost") || trimmed.startsWith("10.0.2.2") || trimmed.startsWith("127.0.0.1") || trimmed.startsWith("192.168.")) {
-                    "http://$trimmed"
-                } else {
-                    "https://$trimmed"
-                }
-            } else {
-                trimmed
-            }
-            val formatted = if (withScheme.endsWith("/")) withScheme else "$withScheme/"
+            val formatted = BaseUrlNormalizer.normalize(rawUrl)
             val probeUrl = "${formatted}api/me"
 
             withContext(Dispatchers.IO) {
@@ -162,7 +155,9 @@ class LoginViewModel(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = loginUseCase(currentState.email, currentState.password)) {
                 is Resource.Success -> {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = null) }
+                    _uiState.update {
+                        it.copy(isLoading = false, errorMessage = null, loginSucceeded = true)
+                    }
                 }
                 is Resource.Error -> {
                     _uiState.update {
