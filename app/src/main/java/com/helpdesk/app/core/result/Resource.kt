@@ -1,3 +1,7 @@
+/**
+ * Result wrapper for async operations: Success, Error, or Loading state.
+ * Used throughout the app to represent the outcome of repository and use-case calls.
+ */
 package com.helpdesk.app.core.result
 
 sealed interface Resource<out T> {

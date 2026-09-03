@@ -1,3 +1,7 @@
+/**
+ * Data layer: repository implementations, DTO mapping, and the safeApiCall helper
+ * that wraps Retrofit calls in consistent error handling (401→Unauthorized, 403→Forbidden, etc.).
+ */
 package com.helpdesk.app.data.repository
 
 import com.helpdesk.app.core.result.AppError
@@ -51,11 +55,11 @@ suspend fun <T, R> safeApiCall(
 
             when (code) {
                 401 -> {
-                    if (errorMessage.isNotBlank() && !errorMessage.startsWith("Request failed") && !errorMessage.equals("Unauthorized", ignoreCase = true)) {
-                        Resource.Error(AppError.Validation(errorMessage))
-                    } else {
-                        Resource.Error(AppError.Unauthorized)
-                    }
+                    // 401 always means the session is no longer valid.
+                    // Even when the server returns a custom body, treat it as
+                    // Unauthorized so the app clears the session and routes the
+                    // user back to login.
+                    Resource.Error(AppError.Unauthorized)
                 }
                 403 -> Resource.Error(AppError.Forbidden(if (errorMessage.startsWith("Request failed")) "Permission denied. Admin role required." else errorMessage))
                 429 -> Resource.Error(

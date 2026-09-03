@@ -1,3 +1,7 @@
+/**
+ * Domain layer: business models, repository interfaces, and use-case classes.
+ * This package is platform-agnostic and contains no Android dependencies.
+ */
 package com.helpdesk.app.domain.repository
 
 import com.helpdesk.app.core.result.Resource

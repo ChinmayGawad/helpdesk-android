@@ -80,7 +80,7 @@ class SessionCookieJar(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            // Cookie deserialization failed; will be reloaded on next login
         }
     }
 
@@ -90,7 +90,7 @@ class SessionCookieJar(
             val jsonStr = json.encodeToString(serializable)
             prefs.edit().putString(host, jsonStr).apply()
         } catch (e: Exception) {
-            e.printStackTrace()
+            // Cookie persistence failed; cookies remain in memory only
         }
     }
 

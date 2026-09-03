@@ -1,3 +1,7 @@
+/**
+ * Date/time formatting utilities for displaying timestamps in user-facing strings
+ * (relative time, short date, full display date).
+ */
 package com.helpdesk.app.core.util
 
 import java.time.Instant

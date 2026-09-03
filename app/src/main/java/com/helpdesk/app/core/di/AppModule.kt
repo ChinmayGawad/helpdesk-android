@@ -40,6 +40,10 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
+/**
+ * Koin module that provides shared infrastructure components:
+ * SessionManager, CookieJar, network interceptors, OkHttpClient, and Retrofit API service.
+ */
 val coreModule = module {
     single { SessionManager(androidContext()) }
     single { SessionCookieJar(androidContext(), get()) }
@@ -49,12 +53,18 @@ val coreModule = module {
     single { NetworkClient.createApiService(get(), get()) }
 }
 
+/**
+ * Koin module that provides repository implementations bound to their domain interfaces.
+ */
 val dataModule = module {
     single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
     single<TicketRepository> { TicketRepositoryImpl(get()) }
     single<UserRepository> { UserRepositoryImpl(get()) }
 }
 
+/**
+ * Koin module that provides all domain-level use cases (business logic).
+ */
 val domainModule = module {
     // Auth
     factory { LoginUseCase(get()) }
@@ -83,6 +93,9 @@ val domainModule = module {
     factory { DeleteUserUseCase(get()) }
 }
 
+/**
+ * Koin module that provides UI-layer ViewModels.
+ */
 val presentationModule = module {
     viewModel { LoginViewModel(get(), get(), get(), get(), get()) }
     viewModel { DashboardViewModel(get(), get(), get()) }

@@ -1,7 +1,14 @@
+/**
+ * Network layer: HTTP client construction, interceptors for dynamic host switching
+ * and session authentication, and the OkHttp cookie jar for persistent sessions.
+ */
 package com.helpdesk.app.core.network
 
 import com.helpdesk.app.core.datastore.SessionManager
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
@@ -13,6 +20,11 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
 
+/**
+ * Interceptor that rewrites the request URL host/scheme/port to match the
+ * user-configured base URL from [SessionManager]. Enables switching between
+ * dev, staging, and production backends without rebuilding the app.
+ */
 class DynamicHostInterceptor(private val sessionManager: SessionManager) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
@@ -26,7 +38,21 @@ class DynamicHostInterceptor(private val sessionManager: SessionManager) : Inter
                 .host(newHttpUrl.host)
                 .port(newHttpUrl.port)
                 .build()
-            request = request.newBuilder().url(updatedUrl).build()
+            request = request.newBuilder()
+                .url(updatedUrl)
+                // Better Auth validates the Origin header even for native clients.
+                .header(
+                    "Origin",
+                    buildString {
+                        append("${newHttpUrl.scheme}://${newHttpUrl.host}")
+                        if ((newHttpUrl.scheme == "http" && newHttpUrl.port != 80) ||
+                            (newHttpUrl.scheme == "https" && newHttpUrl.port != 443)
+                        ) {
+                            append(":${newHttpUrl.port}")
+                        }
+                    }
+                )
+                .build()
         }
 
         return chain.proceed(request)
@@ -37,12 +63,19 @@ class AuthInterceptor(
     private val sessionManager: SessionManager,
     private val sessionCookieJar: SessionCookieJar
 ) : Interceptor {
+
+    // Fire-and-forget scope for clearing session on 401 without blocking the interceptor chain.
+    private val clearScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     override fun intercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
 
         // Attach Authorization: Bearer <token> if cached session token is present
         val token = sessionManager.getCachedToken()
-        if (!token.isNullOrBlank() && request.header("Authorization") == null) {
+        if (!token.isNullOrBlank() &&
+            request.header("Authorization") == null &&
+            !request.url.encodedPath.contains("/sign-in/")
+        ) {
             request = request.newBuilder()
                 .header("Authorization", "Bearer $token")
                 .build()
@@ -51,8 +84,9 @@ class AuthInterceptor(
         val response = chain.proceed(request)
 
         if (response.code == 401 && !request.url.encodedPath.contains("sign-in")) {
-            sessionCookieJar.clear()
-            runBlocking {
+            // Clear session asynchronously — do not block the calling thread.
+            clearScope.launch {
+                sessionCookieJar.clear()
                 sessionManager.clearSession()
             }
         }
