@@ -1,3 +1,7 @@
+/**
+ * Session persistence: stores encrypted auth tokens, cookies, and user profile
+ * in Android DataStore preferences, backed by the Android Keystore.
+ */
 package com.helpdesk.app.core.datastore
 
 import android.content.Context
@@ -6,6 +10,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.helpdesk.app.core.security.KeystoreCrypto
+import com.helpdesk.app.core.util.BaseUrlNormalizer
 import com.helpdesk.app.domain.model.User
 import com.helpdesk.app.domain.model.UserRole
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +27,11 @@ import java.util.concurrent.atomic.AtomicReference
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "helpdesk_session")
 
+/**
+ * Persists and observes the user session (token, cookies, cached user) using
+ * Android DataStore preferences. Sensitive values are encrypted with the
+ * Android Keystore via [com.helpdesk.app.core.security.KeystoreCrypto].
+ */
 class SessionManager(private val context: Context) {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -34,7 +45,7 @@ class SessionManager(private val context: Context) {
         val KEY_USER_JSON = stringPreferencesKey("user_json")
         val KEY_SESSION_TOKEN = stringPreferencesKey("session_token")
         val KEY_COOKIES = stringPreferencesKey("session_cookies")
-        const val DEFAULT_BASE_URL = "https://help-desk-production-4340.up.railway.app/"
+        const val DEFAULT_BASE_URL = com.helpdesk.app.BuildConfig.DEFAULT_API_BASE_URL
     }
 
     val baseUrlFlow: Flow<String> = context.dataStore.data.map { preferences ->
@@ -42,43 +53,24 @@ class SessionManager(private val context: Context) {
     }
 
     val userFlow: Flow<User?> = context.dataStore.data.map { preferences ->
-        val userJson = preferences[KEY_USER_JSON]
-        if (!userJson.isNullOrBlank()) {
-            try {
-                val data = json.decodeFromString<CachedUser>(userJson)
-                User(
-                    id = data.id,
-                    name = data.name,
-                    email = data.email,
-                    role = UserRole.fromValue(data.role),
-                    createdAt = data.createdAt
-                )
-            } catch (e: Exception) {
-                null
-            }
-        } else {
-            null
-        }
+        val encrypted = preferences[KEY_USER_JSON] ?: return@map null
+        decodeUser(encrypted)
     }
 
     val sessionTokenFlow: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[KEY_SESSION_TOKEN]
+        preferences[KEY_SESSION_TOKEN]?.let { decodeToken(it) }
     }
 
     val cookiesFlow: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[KEY_COOKIES]
+        preferences[KEY_COOKIES]?.let { decodeCookies(it) }
     }
 
     init {
         scope.launch {
-            baseUrlFlow.collect { url ->
-                cachedBaseUrl.set(url)
-            }
+            baseUrlFlow.collect { url -> cachedBaseUrl.set(url) }
         }
         scope.launch {
-            sessionTokenFlow.collect { token ->
-                cachedToken.set(token)
-            }
+            sessionTokenFlow.collect { token -> cachedToken.set(token) }
         }
     }
 
@@ -91,21 +83,11 @@ class SessionManager(private val context: Context) {
     }
 
     suspend fun getSessionToken(): String? {
-        return context.dataStore.data.map { it[KEY_SESSION_TOKEN] }.firstOrNull()
+        return context.dataStore.data.map { it[KEY_SESSION_TOKEN]?.let { enc -> decodeToken(enc) } }.firstOrNull()
     }
 
     suspend fun setBaseUrl(url: String) {
-        val trimmed = url.trim()
-        val withScheme = if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-            if (trimmed.startsWith("localhost") || trimmed.startsWith("10.0.2.2") || trimmed.startsWith("127.0.0.1") || trimmed.startsWith("192.168.")) {
-                "http://$trimmed"
-            } else {
-                "https://$trimmed"
-            }
-        } else {
-            trimmed
-        }
-        val formatted = if (withScheme.endsWith("/")) withScheme else "$withScheme/"
+        val formatted = BaseUrlNormalizer.normalize(url)
         cachedBaseUrl.set(formatted)
         context.dataStore.edit { preferences ->
             preferences[KEY_BASE_URL] = formatted
@@ -124,16 +106,16 @@ class SessionManager(private val context: Context) {
             createdAt = user.createdAt
         )
         context.dataStore.edit { preferences ->
-            preferences[KEY_USER_JSON] = json.encodeToString(cached)
+            preferences[KEY_USER_JSON] = requireNotNull(encryptUser(cached))
             if (!token.isNullOrBlank()) {
-                preferences[KEY_SESSION_TOKEN] = token
+                preferences[KEY_SESSION_TOKEN] = requireNotNull(encryptToken(token))
             }
         }
     }
 
     suspend fun saveCookies(cookiesHeader: String) {
         context.dataStore.edit { preferences ->
-            preferences[KEY_COOKIES] = cookiesHeader
+            preferences[KEY_COOKIES] = requireNotNull(encryptCookies(cookiesHeader))
         }
     }
 
@@ -145,6 +127,33 @@ class SessionManager(private val context: Context) {
             preferences.remove(KEY_COOKIES)
         }
     }
+
+    // ---- Encoding helpers ----
+
+    private fun encodeUser(user: CachedUser): String? = runCatching { json.encodeToString(user) }.getOrNull()
+    private fun decodeUser(encoded: String?): User? {
+        if (encoded.isNullOrBlank()) return null
+        return runCatching {
+            val data = json.decodeFromString<CachedUser>(encoded)
+            User(
+                id = data.id,
+                name = data.name,
+                email = data.email,
+                role = UserRole.fromValue(data.role),
+                createdAt = data.createdAt
+            )
+        }.getOrNull()
+    }
+
+    private fun encodeToken(token: String): String? = KeystoreCrypto.encrypt(token)
+    private fun decodeToken(encoded: String?): String? = KeystoreCrypto.decrypt(encoded)
+
+    private fun encodeCookies(header: String): String? = KeystoreCrypto.encrypt(header)
+    private fun decodeCookies(encoded: String?): String? = KeystoreCrypto.decrypt(encoded)
+
+    private fun encryptUser(user: CachedUser): String? = encodeToken(json.encodeToString(user)!!)
+    private fun encryptToken(token: String): String? = encodeToken(token)
+    private fun encryptCookies(header: String): String? = encodeToken(header)
 }
 
 @kotlinx.serialization.Serializable

@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
     <cloud-backup>
-        <include domain="sharedpref" path="."/>
         <exclude domain="sharedpref" path="helpdesk_cookie_store.xml"/>
+        <exclude domain="file" path="datastore/helpdesk_session.preferences_pb"/>
+        <exclude domain="file" path="datastore/helpdesk_session.preferences_pb.backup"/>
+        <exclude domain="file" path="datastore/helpdesk_session.preferences_pb.legacy"/>
     </cloud-backup>
     <device-transfer>
-        <include domain="sharedpref" path="."/>
         <exclude domain="sharedpref" path="helpdesk_cookie_store.xml"/>
+        <exclude domain="file" path="datastore/helpdesk_session.preferences_pb"/>
+        <exclude domain="file" path="datastore/helpdesk_session.preferences_pb.backup"/>
+        <exclude domain="file" path="datastore/helpdesk_session.preferences_pb.legacy"/>
     </device-transfer>
 </data-extraction-rules>

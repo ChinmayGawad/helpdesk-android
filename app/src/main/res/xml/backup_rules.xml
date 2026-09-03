@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <include domain="sharedpref" path="."/>
     <exclude domain="sharedpref" path="helpdesk_cookie_store.xml"/>
+    <!-- Exclude DataStore plaintext protobuf files. Sensitive keys are also
+         encrypted with a Keystore-backed AES key, but file-level exclusion
+         is defense-in-depth in case the app is backed up through the legacy
+         full-backup path on pre-Android-12 devices. -->
+    <exclude domain="file" path="datastore/helpdesk_session.preferences_pb"/>
+    <exclude domain="file" path="datastore/helpdesk_session.preferences_pb.backup"/>
+    <exclude domain="file" path="datastore/helpdesk_session.preferences_pb.legacy"/>
 </full-backup-content>
