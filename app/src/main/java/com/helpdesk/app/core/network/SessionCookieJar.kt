@@ -3,6 +3,7 @@ package com.helpdesk.app.core.network
 import android.content.Context
 import android.content.SharedPreferences
 import com.helpdesk.app.core.datastore.SessionManager
+import com.helpdesk.app.core.security.KeystoreCrypto
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -74,24 +75,29 @@ class SessionCookieJar(
             val allEntries = prefs.all
             for ((host, jsonStr) in allEntries) {
                 if (jsonStr is String && jsonStr.isNotBlank()) {
-                    val list = json.decodeFromString<List<SerializableCookie>>(jsonStr)
+                    val decrypted = KeystoreCrypto.decrypt(jsonStr)
+                    val serializedCookies = decrypted ?: jsonStr
+                    val list = json.decodeFromString<List<SerializableCookie>>(serializedCookies)
                     val okList = list.map { it.toOkHttpCookie() }.toMutableList()
                     cookieStore[host] = okList
+                    if (decrypted == null) {
+                        persistCookiesForHost(host, okList)
+                    }
                 }
             }
-        } catch (e: Exception) {
-            // Cookie deserialization failed; will be reloaded on next login
+        } catch (_: IllegalArgumentException) {
+            // Ignore malformed persisted cookies and continue with an empty store.
+        } catch (_: kotlinx.serialization.SerializationException) {
+            // Ignore cookies from an incompatible older format.
         }
     }
 
     private fun persistCookiesForHost(host: String, cookies: List<Cookie>) {
-        try {
-            val serializable = cookies.map { SerializableCookie.fromOkHttpCookie(it) }
-            val jsonStr = json.encodeToString(serializable)
-            prefs.edit().putString(host, jsonStr).apply()
-        } catch (e: Exception) {
-            // Cookie persistence failed; cookies remain in memory only
-        }
+        val serializable = cookies.map { SerializableCookie.fromOkHttpCookie(it) }
+        val jsonStr = json.encodeToString(serializable)
+        val encrypted = KeystoreCrypto.encrypt(jsonStr)
+            ?: throw IllegalStateException("Unable to encrypt session cookies")
+        prefs.edit().putString(host, encrypted).apply()
     }
 
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {

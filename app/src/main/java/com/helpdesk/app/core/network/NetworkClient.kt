@@ -70,7 +70,7 @@ class AuthInterceptor(
     override fun intercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
 
-        // Attach Authorization: Bearer <token> if cached session token is present
+        // Attach the cached session token using Better Auth's Bearer scheme.
         val token = sessionManager.getCachedToken()
         if (!token.isNullOrBlank() &&
             request.header("Authorization") == null &&

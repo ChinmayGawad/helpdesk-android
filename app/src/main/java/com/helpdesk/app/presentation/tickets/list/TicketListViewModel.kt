@@ -49,13 +49,15 @@ class TicketListViewModel(
     val uiState: StateFlow<TicketListUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
+    private var requestJob: Job? = null
 
     init {
         loadTickets()
     }
 
     fun loadTickets(isRefresh: Boolean = false, page: Int = 1) {
-        viewModelScope.launch {
+        requestJob?.cancel()
+        requestJob = viewModelScope.launch {
             if (isRefresh) {
                 _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
             } else {
